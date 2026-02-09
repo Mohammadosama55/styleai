@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleAI - Your Fashion Recommendations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <i class="fas fa-robot"></i>
+                    StyleAI
+                </h1>
+                <div class="header-actions">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Results Content -->
+        <main class="results-content">
+            <div class="results-header">
+                <h1><i class="fas fa-star"></i> Your Personalized Fashion Recommendations</h1>
+                <p>Based on your {{ 'photo analysis' if not quick_mode else 'preferences' }}</p>
+            </div>
+
+            {% if result.error %}
+            <div class="error-card">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Processing Error</h3>
+                <p>{{ result.error }}</p>
+                <p>We're providing fallback recommendations while we work on the issue.</p>
+            </div>
+            {% endif %}
+
+            <!-- Skin Analysis Section -->
+            <section class="results-section">
+                <h2><i class="fas fa-user"></i> Skin Analysis</h2>
+                <div class="skin-analysis-card">
+                    <div class="analysis-details">
+                        <div class="analysis-item">
+                            <span class="label">Detected Skin Tone:</span>
+                            <span class="value">{{ result.skin_analysis.detected_tone }}</span>
+                        </div>
+                        {% if result.skin_analysis.confidence %}
+                        <div class="analysis-item">
+                            <span class="label">Confidence:</span>
+                            <span class="value">{{ (result.skin_analysis.confidence * 100) | round }}%</span>
+                        </div>
+                        {% endif %}
+                        {% if result.user_inputs.gender %}
+                        <div class="analysis-item">
+                            <span class="label">Gender:</span>
+                            <span class="value">{{ result.user_inputs.gender }}</span>
+                        </div>
+                        {% endif %}
+                        {% if result.user_inputs.dress_code %}
+                        <div class="analysis-item">
+                            <span class="label">Dress Code:</span>
+                            <span class="value">{{ result.user_inputs.dress_code }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if result.image_path and not quick_mode %}
+                    <div class="uploaded-image">
+                        <img src="{{ url_for('static', filename=result.image_path) }}" alt="Uploaded photo">
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Color Palette Section -->
+            <section class="results-section">
+                <h2><i class="fas fa-palette"></i> Recommended Color Palette</h2>
+                <div class="palette-container">
+                    {% if result.skin_analysis.color_palette %}
+                        <div class="color-category">
+                            <h3>Primary Colors</h3>
+                            <div class="color-swatches">
+                                {% for color in result.skin_analysis.color_palette.primary %}
+                                <div class="color-swatch">
+                                    <div class="swatch-color" style="background-color: {{ color | lower | replace(' ', '-') }};"></div>
+                                    <span class="swatch-name">{{ color }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="color-category">
+                            <h3>Secondary Colors</h3>
+                            <div class="color-swatches">
+                                {% for color in result.skin_analysis.color_palette.secondary %}
+                                <div class="color-swatch">
+                                    <div class="swatch-color" style="background-color: {{ color | lower | replace(' ', '-') }};"></div>
+                                    <span class="swatch-name">{{ color }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="color-category">
+                            <h3>Colors to Avoid</h3>
+                            <div class="color-swatches avoid-swatches">
+                                {% for color in result.skin_analysis.color_palette.avoid %}
+                                <div class="color-swatch">
+                                    <div class="swatch-color avoid-color"></div>
+                                    <span class="swatch-name">{{ color }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- AI Recommendations Section -->
+            <section class="results-section">
+                <h2><i class="fas fa-robot"></i> AI-Powered Recommendations</h2>
+                
+                {% if result.ai_recommendations.skin_tone_analysis %}
+                <div class="recommendation-card">
+                    <h3><i class="fas fa-info-circle"></i> Skin Tone Insights</h3>
+                    <p><strong>Undertone:</strong> {{ result.ai_recommendations.skin_tone_analysis.undertone }}</p>
+                    <p>{{ result.ai_recommendations.skin_tone_analysis.color_harmony_explanation }}</p>
+                </div>
+                {% endif %}
+
+                {% if result.ai_recommendations.outfit_recommendations %}
+                <div class="recommendation-card">
+                    <h3><i class="fas fa-tshirt"></i> Outfit Recommendations</h3>
+                    <div class="outfit-grid">
+                        {% for category, items in result.ai_recommendations.outfit_recommendations.items() %}
+                        <div class="outfit-category">
+                            <h4>{{ category.title() }}</h4>
+                            <ul>
+                                {% for item in items %}
+                                <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if result.ai_recommendations.accessories %}
+                <div class="recommendation-card">
+                    <h3><i class="fas fa-gem"></i> Accessories</h3>
+                    <div class="accessories-grid">
+                        {% for category, items in result.ai_recommendations.accessories.items() %}
+                        <div class="accessory-category">
+                            <h4>{{ category.title() }}</h4>
+                            <ul>
+                                {% for item in items %}
+                                <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if result.ai_recommendations.styling_tips %}
+                <div class="recommendation-card">
+                    <h3><i class="fas fa-lightbulb"></i> Styling Tips</h3>
+                    <ul class="tips-list">
+                        {% for tip in result.ai_recommendations.styling_tips %}
+                        <li>{{ tip }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if result.ai_recommendations.shopping_links %}
+                <div class="recommendation-card">
+                    <h3><i class="fas fa-shopping-cart"></i> Shop Now</h3>
+                    <div class="shopping-links">
+                        {% for platform, searches in result.ai_recommendations.shopping_links.items() %}
+                        <div class="platform-section">
+                            <h4>{{ platform.replace('_', ' ').title() }}</h4>
+                            <ul>
+                                {% for search in searches %}
+                                <li>{{ search }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if result.ai_recommendations.raw_response and not result.ai_recommendations.outfit_recommendations %}
+                <div class="recommendation-card">
+                    <h3><i class="fas fa-comment"></i> Detailed Recommendations</h3>
+                    <div class="response-text">
+                        {{ result.ai_recommendations.raw_response | safe }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if result.ai_recommendations.basic_tips %}
+                <div class="recommendation-card">
+                    <h3><i class="fas fa-comment"></i> Fashion Tips</h3>
+                    <p>{{ result.ai_recommendations.basic_tips }}</p>
+                </div>
+                {% endif %}
+            </section>
+
+            <!-- Action Buttons -->
+            <div class="results-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <i class="fas fa-redo"></i> Get New Recommendations
+                </a>
+                <button class="btn btn-secondary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Recommendations
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 StyleAI. Powered by Groq AI and OpenCV.</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
